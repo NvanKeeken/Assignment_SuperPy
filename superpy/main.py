@@ -21,8 +21,6 @@ __human_name__ = "superpy"
 console = Console()
 parser = argparse.ArgumentParser()
 subparser = parser.add_subparsers(dest="command")
-# parser = argparse.ArgumentParser()
-# subparser = parser.add_subparsers(dest='command')
 
 #all the subparsers 
 sell = subparser.add_parser('sell')
