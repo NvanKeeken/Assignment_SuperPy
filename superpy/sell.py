@@ -1,5 +1,4 @@
 import csv
-from advance import get_date_file
 
 # this file contains all the functions related to the sell subparser 
 
@@ -24,10 +23,9 @@ def get_bought_id(product_name, expiration_date):
           return bought_id
    
 # this function adds sold product to sold.csv file 
-def add_sold_product(product_name, sell_price, amount, expiration_date):
+def add_sold_product(product_name, sell_price, amount, expiration_date, sell_date):
     with open("sold.csv", 'a', newline="") as soldfile:
      writer = csv.writer(soldfile, lineterminator='\n')
-     sell_date = get_date_file()
      sold_id = get_file_id("sold.csv")
      bought_id = get_bought_id(product_name, expiration_date)
      formatted_sell_price = format(sell_price,".2f")

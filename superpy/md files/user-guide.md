@@ -11,8 +11,9 @@ the core functionality of this commant line tool is to keep track of the invento
 - get a report of all the expired products
 - calculate the profit 
 - calculate the revenue
-- show profit/revnenue in linechard 
+- show profit/revenue in linechard 
 - advance date that is precieved to be today 
+- set date that is precieved to be today
 
 ### How to buy a product?
 To buy a product use:
@@ -22,12 +23,21 @@ To buy a product use:
 The options of arguments you are required to use are:
 - --name or -n              product name
 - --price or -p             price of one bought product 
-- --expiration_date or -e   expiration_date of bought product in format YYYY-MM-D
+- --expiration_date or -e   expiration_date of bought product in format YYYY-MM-DD
 - --amount or -a            amount of products bought with this expiration_date
+
+The argument that is optional to use:
+- --buy_date or -b          buy date of the bought product in format YYYY-MM-DD
+
+If buy_date is not defined it will automatically set the buy_date to the date that is precieved to be today
 
 Example:
 
-    python main.py buy -name milk -price 0.99 -expiration_date 2023-06-14 -amount 10
+    python main.py buy --name milk --price 0.99 --expiration_date 2023-06-14 --amount 10 --buy_date 2023-06-15
+
+    python main.py buy -n milk -p 0.99 -e 2023-06-14 -a 10 -b 20230-06-15
+
+    python main.py buy --name milk --price 0.99 --expiration_date 2023-06-14 --amount 10
 
     python main.py buy -n milk -p 0.99 -e 2023-06-14 -a 10
 
@@ -40,13 +50,23 @@ The options of arguments you are required to use are:
 * --name or -n              product name
 * --price or -p             price of one sold product 
 * --amount or -a            amount of products bought with this expiration_date
-* --expiration_date or -e   expiration_date of sold product in format YYYY-MM-D
+
+The argument that is optional to use:
+* --sell_date or -s         sell date of sold product in fromat YYYY-MM-DD
+
+If sell_date is not defined it will set the sell_date to the date that is precieved to be today
+
+When there are more then one of the sold product in the inventory, it will automatically sell the one that is closest to expiring. If that product is already expired it will sell the next closest to expiring, until the expired product is left. Then it will give an error message to make you aware. 
 
 Example:
 
-    python main.py sell -name milk -price 1.50 -expiration_date 2023-06-14 -amount 2
+    python main.py sell --name milk --price 1.50 --amount 2 --sell_date 2023-06-14
 
-    python main.py buy -n milk -p 1.50 -e 2023-06-14 -a 2
+    python main.py sell -n milk -p 1.50 -a 2 -s 20230-06-14
+
+    python main.py sell --name milk --price 1.50 --amount 2 
+
+    python main.py sell -n milk -p 1.50 -a 2 
 
 ### How to get a report of the inventory?
 To show inventory:
@@ -171,3 +191,13 @@ to advance the date:
 Example:
 
      python main.py --advance_date 2
+
+### How to set the date that is precieved as today?
+
+to set the date that is precieved as today at a specific date:
+    
+    python main.py --set_date [YYYY-MM-DD]
+
+Example:
+
+    python main.py --set_date 2023-06-10
