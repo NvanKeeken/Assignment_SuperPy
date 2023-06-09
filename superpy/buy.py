@@ -9,14 +9,13 @@ console= Console()
 
 """this functions adds passed bought product to the bought.csv and calls add_to_inventory 
 function to add it to inventory.csv """
-def buy_product(product_name, buy_price, expiration_date, amount):
+def buy_product(product_name, buy_price, expiration_date, amount, buy_date = get_date_file()):
     if check_product_already_bought(product_name, expiration_date):
        console.print("Error: Product with this expiration date has already been bought", style="red")
     else:
        with open("bought.csv", 'a', newline="") as file:
          writer = csv.writer(file, lineterminator='\n')
          bought_id = get_file_id("bought.csv")
-         buy_date = get_date_file()
          formatted_buy_price = format(buy_price,".2f")
          product_name = product_name.lower()
          product =[bought_id,product_name,buy_date,formatted_buy_price,expiration_date,amount]

@@ -60,7 +60,7 @@ def calculate_total_profit(date):
     total_revenue = get_total_revenue(date)
     total_costs = get_total_costs(date)
     total_profit = total_revenue - total_costs
-    return total_profit
+    return round(total_profit, 2)
 
 
 

@@ -1,12 +1,13 @@
 import datetime as dt
 import calendar
 
+
 # this file contains all the functions related to the advance subparser and date in general
 
 # this function advances the date in the currentDate file by the number of days pased in CLI 
 def advance_time(day=0):
-    date_today = dt.date.today()
-    advanced_date = date_today +  dt.timedelta(days = day)
+    date_today = dt.datetime.strptime(get_date_file(), "%Y-%m-%d")
+    advanced_date = date_today + dt.timedelta(days = day)
     with open("currentDate.txt", "w") as file:
             file.write(advanced_date.strftime("%Y-%m-%d"))
 
@@ -47,8 +48,17 @@ def get_date_Format(date):
                if date == dt.datetime.strptime(date, "%Y").strftime("%Y"):
                   return "%Y"
            except ValueError:
-                raise ValueError("format must be 'YYYY-MM-DD', 'YYYY-MM' or 'YYYY'")
-
+                raise ValueError("Format must be 'YYYY-MM-DD', 'YYYY-MM' or 'YYYY'")
+           
+# This function sets date currentDate file to a specific date with the --set_date option
+def set_date_file(date):
+      if get_date_Format(date) == "%Y-%m-%d":
+          with open("currentDate.txt", "w") as file:
+               date_today= dt.datetime.strptime(date, "%Y-%m-%d")
+               file.write(date_today.strftime("%Y-%m-%d"))
+      else:
+           raise ValueError("Format must be 'YYYY-MM-DD'")
+      
 # this function converts month number into the written form and return for example the string "May 2023"
 def get_month(date):
      date_format = get_date_Format(date)

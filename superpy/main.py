@@ -1,11 +1,10 @@
 # Imports
 import argparse
 from sys import stdout
-from advance import advance_time,set_date_today,get_date_file, get_date_yesterday, get_month, get_date_now
+from advance import advance_time,set_date_today,get_date_file, get_date_yesterday, get_month, get_date_now, set_date_file
 from buy import buy_product
-from report import  is_inStock, make_inventory
+from report import  is_inStock, make_inventory, get_expired_products
 from checks.date import validation_check_date
-from expired import get_expired_products
 from revenue import get_total_revenue
 from profit import calculate_total_profit
 from visible_components.tables import make_table_from_bought_csv, make_table_from_sold_csv
@@ -22,6 +21,7 @@ console = Console()
 parser = argparse.ArgumentParser()
 subparser = parser.add_subparsers(dest="command")
 
+
 #all the subparsers 
 sell = subparser.add_parser('sell')
 buy = subparser.add_parser('buy')
@@ -30,17 +30,18 @@ chart = subparser.add_parser("chart")
 
 
 # arguments subparser buy
-buy.add_argument('--name', "-n", type=str, required=True, help="Supply the bought product name")
-buy.add_argument('--price', "-p", type=float, required=True, help="Supply the bought product price")
-buy.add_argument('--expiration_date',"-e", required=True, help="Supply the expiration date of the bought product")
-buy.add_argument('--amount',"-a", required=True, help="Supply the amount of products bought")
+buy.add_argument("--name", "-n", type=str, required=True, help="Supply the bought product name")
+buy.add_argument("--price", "-p", type=float, required=True, help="Supply the bought product price")
+buy.add_argument("--expiration_date","-e", required=True, help="Supply the expiration date of the bought product")
+buy.add_argument("--amount","-a", required=True, help="Supply the amount of products bought")
+buy.add_argument("--buy_date","-b", required=False, help="Supply the date you bought the product(s) in format YYYY-MM-DD")
 
 
 # arguments subparser sell
 sell.add_argument("--name","-n",type=str,help="Supply the name of the product sold",required=True )
 sell.add_argument("--price", "-p", type=float, help="Supply the price of product sold", required=True)
 sell.add_argument("--amount", "-a", type=int, help="Supply the amount of products sold", required=True)
-sell.add_argument("--expiration_date","-e",help="Supply the expiration date of the sold product",required=True)
+sell.add_argument("--sell_date", "-s", help="Supply the sell date of the product(s) in the format YYYY-MM-DD" )
 
 # add argument chart
 chart_group = chart.add_mutually_exclusive_group(required=True)
@@ -147,18 +148,36 @@ profit_group.add_argument("--date",
 # add argument advance
 parser.add_argument("--advance_date", type=int,help="Supply the number of days you want to advance by")
 
+# add argument set_date
+parser.add_argument("--set_date", help="Supply date in the format YYYY-mm-dd to set the date that is precieved to be today")
+
 args = parser.parse_args()
 
 # Checks wich subparser and argument is used and wich functionality needs to be executed 
 if args.command == 'buy':
    if validation_check_date("%Y-%m-%d",args.expiration_date):
-       buy_product(args.name, args.price, args.expiration_date, args.amount)
-       console.print("Ok", style="bold green")
+       if args.buy_date is not None:
+           if validation_check_date("%Y-%m-%d",args.buy_date):
+              buy_product(args.name, args.price, args.expiration_date, args.amount, args.buy_date)
+              console.print("Ok", style="bold green")
+           else:
+              console.print("Buy date is not formatted correctly", style="bold red")
+       else:
+           buy_product(args.name, args.price, args.expiration_date, args.amount)
+           console.print("Ok", style="bold green")
+   else:
+      console.print("Expiration date is not formatted correctly", style="bold red")
   
 if args.command == "sell":
-   if validation_check_date("%Y-%m-%d",args.expiration_date):
-      is_inStock(args.name,args.price, args.amount, args.expiration_date)
-      console.print("Ok", style="bold green")
+      if args.sell_date is not None:
+         if validation_check_date("%Y-%m-%d", args.sell_date):
+            is_inStock(args.name,args.price, args.amount, args.sell_date)
+            console.print("Ok", style="bold green")
+         else:
+            console.print("Sell date is not formatted correctly", style="bold red")
+      else:
+         is_inStock(args.name,args.price, args.amount)
+         console.print("Ok", style="bold green")
 
 if args.command == 'chart':
    data_displayed = args.profit if args.profit else args.revenue
@@ -219,6 +238,10 @@ elif args.command == 'report':
 
 if args.advance_date:
     advance_time(args.advance_date)
+    make_inventory(get_date_file(), "add")
+if args.set_date:
+   set_date_file(args.set_date)
+   make_inventory(args.set_date, "add")
 
 def main():
    import csv

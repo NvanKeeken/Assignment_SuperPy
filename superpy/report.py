@@ -1,5 +1,6 @@
 import csv
-from advance import get_date_Format
+from checks.expired import expiration_check, expiring_in_future
+from advance import get_date_Format, get_date_file
 from visible_components.tables import make_table_from_inventory
 from sell import add_sold_product
 from datetime import datetime
@@ -7,12 +8,6 @@ from rich.console import Console
 
 console= Console()
 # This file contains all the functions related to the report inventory CLI argument
-
-""" Note: For this Assignment I assumed that as a supermarket you can have 
-multiple badges of the sameproduct with a different expiration date, 
-so it will check on product name and expiration date tofind a product. 
-I also presumed that it is not very usefull to have multiple badges 
-of the same product and expiration date  """
 
 # This function empties the inventory csv to just the headers 
 def reset_inventory():
@@ -32,36 +27,94 @@ def show_Inventory(inventory):
 
 """ This function checks when a product is sold if that specific product with the expiration date 
   is in stock. """      
-def is_inStock(product_name,price, amount, expiration_date):
+def is_inStock(product_name,price, amount,sell_date=get_date_file()):
     with open("Invent.csv", "r") as file:
         reader = csv.DictReader(file)
-        from expired import expiration_check
         is_in_stock = False
+        expiration_date = get_sold_expiration_date(product_name, sell_date, amount)
+        from checks.expired import expiration_check
         for row in reader:
             if row["Product Name"] == product_name and row["Expiration Date"] == expiration_date:
+                # checks if product is expired, if so it can not be sold
+                if expiration_check(row,sell_date) != True:
+                   # if sold amount is equal to the amount in stock, it deletes product  out of inventory 
+                   if int(row["Count"]) == int(amount):
+                       is_in_stock = True
+                       delete_product(row)
 
-                # if sold amount is equal to the amount in stock, it deletes product  out of inventory 
-                if int(row["Count"]) == int(amount):
-                    is_in_stock = True
-                    delete_product(row)
-
-                # if stock amount is bigger than 0 and bigger than amount it updates stock count  
-                if int(row["Count"]) > 0 and int(row["Count"]) >= int(amount):
-                    update_count_inventory(product_name,"sold",expiration_date, amount)
-                    is_in_stock = True
-
-                # if sold product is in stock but is expired it gives error that products are expired
-                # So product can not be sold 
-                if expiration_check(row):
-                    console.print("Error: Product(s) are expired", style="bold magenta") 
-                    is_in_stock=False
+                    # if stock amount is bigger than 0 and bigger than amount it updates stock count  
+                   elif int(row["Count"]) > 0 and int(row["Count"]) >= int(amount):
+                       update_count_inventory(product_name,"sold",expiration_date, amount)
+                       is_in_stock = True
+                else:
+                    is_in_stock = False
 
         if is_in_stock:
-            # make_inventory(get_date_file(), "add") 
-            add_sold_product(product_name, price, amount, expiration_date)
+            add_sold_product(product_name, price, amount, expiration_date, sell_date)
         else:
-            console.print("Error: product is out of stock", style="red bold")
-            
+            # if sold product is in stock but expired it gives an error
+            if expiration_check(row, sell_date):
+               console.print("Error: Product(s) are expired", style="bold magenta")
+            else: 
+               console.print("Error: product is out of stock", style="red bold")
+
+""" this function filters the inventory for expired products if default of 0 days is passed
+# else for products that will expire in the amount of days passed 
+# if days is bigger then 0. These products will be shown in in the CLI """
+def get_expired_products(days):
+    expired_products = []
+    with open("Invent.csv", "r") as inventoryfile:
+        reader = csv.DictReader(inventoryfile)
+        for row in reader:
+          if days == "0" and expiration_check(row):
+            expired_products.append(row)
+          elif days > "0":
+            if expiring_in_future(row,days):
+              expired_products.append(row)
+    show_Inventory(expired_products)
+
+""" This function filters the inventory to products of the same kind as the sold product, so by product name.
+These products have are of the same kind but have a different expiration date. It return a list of 
+the filtered inventory"""
+
+def bought_products_of_kind(product_name):
+    with open("Invent.csv", "r") as file:
+        reader = csv.DictReader(file)
+        products_of_kind=[]
+        for row in reader:
+            if row["Product Name"] == product_name:
+              products_of_kind.append(row)
+        return products_of_kind
+    
+
+"""This function calculates the expiration date of the sold product.It is possible that a supermarket has multiple 
+batches of the same kind of product but with a different expiration date. If that is the case the product will be 
+sold from the batch that is closest to expiring, unless the batch is already expired or the amount of products sold 
+is bigger than the amount of products of that date in the inventory. In that case it will sell the of the batch next closest to expiring   """       
+
+def get_sold_expiration_date(product_name,sell_date, amount):
+    products = bought_products_of_kind(product_name)
+    first_expired = ""
+    # if there is only one badge or product of this kind it will return that expiration date
+    if len(products) == 1:
+            return products[0]["Expiration Date"]
+    else:
+         for product in products:
+           product_expiration_date = datetime.strptime(product["Expiration Date"], "%Y-%m-%d")
+           # checks if product is already expired 
+           if expiration_check(product, sell_date) == False:
+             # checks if the amount of products is not bigger than the stock of the product with that expiration date
+             if int(product["Count"]) >= amount:
+               if first_expired == "":
+                   first_expired = product["Expiration Date"]  
+               elif product_expiration_date < datetime.strptime(first_expired, "%Y-%m-%d"): # updates the product closest to expiring
+                   first_expired = product["Expiration Date"]
+             else:
+                 continue
+           else:
+               continue   
+    return first_expired
+
 # This function deletes product out of inventory, by emtying the inventory and adding updated list
 def delete_product(deleted_product): 
     newLines = []
@@ -167,8 +220,6 @@ def make_inventory(date, action):
     elif action == "show":
         show_Inventory(new_inventory)
 
-
-  
 def find_bought_product(id,path,characteristic):
     with open(path, "r") as boughtproduct:
         reader= csv.DictReader(boughtproduct)
